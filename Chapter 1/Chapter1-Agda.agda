@@ -44,6 +44,7 @@ module Example-Employees where
 
 module Sandbox-Tuples where 
   record _×_ (A : Set) (B : Set) : Set where 
+    constructor _,_
     pattern
     field 
       proj₁ : A 
@@ -58,6 +59,7 @@ module Sandbox-Tuples where
   first record { proj₁ = x} = x 
 
   open _×_ 
+
   
   my-tuple-first : Bool 
   my-tuple-first = my-tuple .proj₁
@@ -65,6 +67,10 @@ module Sandbox-Tuples where
   my-tuple-second : Bool 
   my-tuple-second = proj₂ my-tuple
 
+  curry : {A B C : Set} → (A × B → C) → (A → B → C) 
+  curry f a b = f (a , b)
 
+  uncurry : {A B C : Set} → (A → B → C) → (A × B → C)
+  uncurry f (a , b) = f a b
 
-    
+  
