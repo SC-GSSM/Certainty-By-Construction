@@ -60,7 +60,7 @@ module Sandbox-Tuples where
 
   open _×_ 
 
-  
+
   my-tuple-first : Bool 
   my-tuple-first = my-tuple .proj₁
 
@@ -72,5 +72,38 @@ module Sandbox-Tuples where
 
   uncurry : {A B C : Set} → (A → B → C) → (A × B → C)
   uncurry f (a , b) = f a b
+
+  _ : Bool × Bool → Bool
+  _ = uncurry _∨_
+
+module Sandbox-Implicits where 
+    open import Data.Bool 
+      using (Bool; false; true; not; _∨_) 
+    
+    open import Data.Product 
+      using (_×_; proj₁; proj₂) 
+
+        renaming ( _,′_ to _,_
+                 ; curry′ to curry 
+                 ; uncurry′ to uncurry 
+                 )
+
+    mk-tuple : (A : Set) → (B : Set) → A → B → A × B 
+    mk-tuple A B x x₁ = x , x₁
+
+open import Data.Bool 
+  using (Bool; false; true; not; _∨_; _∧_)
+  public 
+
+open import Data.Product 
+  using (_×_; _,_; proj₁; proj₂; curry; uncurry)
+  public 
+
+open import Data.Sum 
+  using (_⊎_; inj₁; inj₂) 
+  public 
+
+
+             
 
   
