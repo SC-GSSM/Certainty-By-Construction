@@ -66,7 +66,7 @@ module Playground where
 
   ^-identityʳ : (x : ℕ) → x ^ 1 ≡ x 
   ^-identityʳ zero = refl
-  ^-identityʳ (suc x) = cong suc (^-identityʳ x)
+  ^-identityʳ (suc x) = cong suc (*-identityʳ x)
 
   ∨-identityˡ : (b : Bool) → false ∨ b ≡ b 
   ∨-identityˡ _ = refl
@@ -116,8 +116,61 @@ module Playground where
   not-involutive false = refl
   not-involutive true = refl
 
-  trans : {A : Set} {x y z : Set} → x ≡ y → y ≡ z → x ≡ z 
+  trans : {A : Set} {x y z : A} → x ≡ y → y ≡ z → x ≡ z 
   trans refl refl = refl
 
   a^1≡a+b*0 : (a b : ℕ) → a ^ 1 ≡ a + b * 0 
-  a^1≡a+b*0 a b = {!   !}
+  a^1≡a+b*0 a b = trans (^-identityʳ a) (trans (sym (+-identityʳ a)) (cong (a +_) (sym (*-zeroʳ b))))
+
+  _! : ℕ → ℕ 
+  zero ! = 1
+  suc x ! = suc x * x
+
+  ∣_ : ℕ → ℕ 
+  ∣_ = suc 
+
+  infixr 20 ∣_ 
+
+  --five : ℕ 
+  --five = ∣ ∣ ∣ ∣ ∣ zero 
+
+  ■ : ℕ 
+  ■ = zero 
+
+  five : ℕ 
+  five = ∣ ∣ ∣ ∣ ∣ ■ 
+
+  postulate 
+    ℝ : Set 
+    π : ℝ 
+    ⌊_⌋ : ℝ → ℕ 
+
+  three′ : ℕ 
+  three′ = ⌊ π ⌋
+
+  _‽_⦂_ : {A : Set} → Bool → A → A → A 
+  false ‽ t ⦂ f = f
+  true ‽ t ⦂ f = t
+
+  infixr 20 _‽_⦂_ 
+
+  if_then_else_ : {A : Set} → Bool → A → A → A 
+  if_then_else_ = _‽_⦂_ 
+
+  infixr 20 if_then_else_ 
+
+  case_of_ : {A B : Set} → A → (A → B) → B 
+  case e of f =  f e 
+
+  _is-equal-to_ : {A : Set} → A → A → Set 
+  x is-equal-to y = x ≡ y 
+
+  module ≡-Reasoning where 
+
+    _∎ : {A : Set} → (x : A) → x ≡ x 
+    _∎ x = refl 
+
+    infix 3 _∎ 
+
+    _≡⟨⟩_ : {A : Set} {y : A} → (x : A) → x ≡ y → x ≡ y 
+    x ≡⟨⟩ p = p 
