@@ -174,3 +174,178 @@ module Playground where
 
     _≡⟨⟩_ : {A : Set} {y : A} → (x : A) → x ≡ y → x ≡ y 
     x ≡⟨⟩ p = p 
+
+    infixr 2 _≡⟨⟩_
+
+    _ : four ≡ suc (one + two) 
+    _ = four            ≡⟨⟩ 
+        two + two       ≡⟨⟩ 
+        suc one + two   ≡⟨⟩ 
+        suc (one + two) ≡⟨⟩ 
+        suc three       ∎ 
+
+    _≡⟨_⟩_ : {A : Set} → (x : A) → {y z : A} → x ≡ y → y ≡ z → x ≡ z 
+    x ≡⟨ j ⟩ p = trans j p
+
+    infixr 2 _≡⟨_⟩_
+
+    _by_equals_ : {A : Set} → (x : A) → {y z : A} → x ≡ y → y ≡ z → x ≡ z 
+    _by_equals_ = _≡⟨_⟩_
+
+    infixr 2 _by_equals_
+
+    begin_ : {A : Set} → {x y : A} → x ≡ y → x ≡ y 
+    begin_ hyp = hyp 
+
+    infix 1 begin_ 
+
+  a^1≡a+b*0′ : (a b : ℕ) → a ^ 1 ≡ a + b * 0 
+  a^1≡a+b*0′ a b = 
+    begin 
+      a ^ 1 by ^-identityʳ a equals  
+      a     ≡⟨ sym (+-identityʳ a) ⟩ 
+      a + 0 ≡⟨ cong (a +_) (sym (*-zeroʳ b)) ⟩ 
+      a + b * 0 
+      ∎
+    where open ≡-Reasoning 
+
+  ∨-assoc : (a b c : Bool) → (a ∨ b) ∨ c ≡ a ∨ (b ∨ c) 
+  ∨-assoc false b c = refl
+  ∨-assoc true b c = refl
+
+  ∧-assoc : (a b c : Bool) → (a ∧ b) ∧ c ≡ a ∧ (b ∧ c) 
+  ∧-assoc false b c = refl
+  ∧-assoc true b c = refl
+
+  +-assoc : (x y z : ℕ) → (x + y) + z ≡ x + (y + z)
+  +-assoc zero y z = refl
+  +-assoc (suc x) y z =
+    begin
+     suc x + y + z ≡⟨⟩ 
+     suc (x + y + z) ≡⟨ cong suc (+-assoc x y z) ⟩
+     suc (x + (y + z)) ≡⟨⟩ 
+     suc x + (y + z)
+     ∎
+    where open ≡-Reasoning
+
+  +-suc : (x y : ℕ) → x + suc y ≡ suc (x + y) 
+  +-suc zero y = refl
+  +-suc (suc x) y = cong suc (+-suc x y)
+
+  -- this is not necessary because agda auto resolves it 
+  suc-+ : (x y : ℕ) → suc x + y ≡ suc (x + y) 
+  suc-+ x y = refl
+
+  +-comm : (x y : ℕ) → x + y ≡ y + x 
+  +-comm zero y = sym (+-identityʳ y)
+  +-comm (suc x) y = 
+    begin
+     suc x + y by cong suc (+-comm x y) equals 
+     suc (y + x) by sym (+-suc y x) equals
+     y + suc x
+     ∎
+    where open ≡-Reasoning
+
+  suc-injective : {x y : ℕ} → suc x ≡ suc y → x ≡ y 
+  suc-injective refl = refl
+
+  *-suc : (x y : ℕ) → x * suc y ≡ x + x * y 
+  *-suc zero y = refl
+  *-suc (suc x) y = 
+    begin
+     suc x * suc y ≡⟨⟩
+     suc y + x * suc y by cong (λ t → suc y + t) (*-suc x y) equals
+     suc y + (x + x * y) ≡⟨⟩ 
+     suc (y + (x + x * y)) by cong suc (sym (+-assoc y x (x * y))) equals
+     suc ((y + x) + x * y) by cong suc (cong (λ t → t + (x * y)) (+-comm y x)) equals
+     suc ((x + y) + x * y) by cong suc (+-assoc x y (x * y)) equals
+     suc (x + (y + x * y)) ≡⟨⟩ 
+     suc x + suc x * y
+     ∎
+    where open ≡-Reasoning
+
+  *-comm : (x y : ℕ) → x * y ≡ y * x 
+  *-comm zero y = sym (*-zeroʳ y)
+  *-comm (suc x) y = 
+    begin
+     (suc x * y) ≡⟨⟩ 
+     (y + x * y) by cong (λ t → y + t) (*-comm x y) equals
+     (y + y * x) by sym(*-suc y x) equals
+     (y * suc x)
+     ∎
+    where open ≡-Reasoning 
+
+  *-distribʳ-+ : (x y z : ℕ) → (y + z) * x ≡ y * x + z * x 
+  *-distribʳ-+ x zero z = refl
+  *-distribʳ-+ x (suc y) z = 
+    begin
+     ((suc y + z) * x) ≡⟨⟩
+     ((suc (y + z)) * x) ≡⟨⟩ 
+     (x + ((y + z) * x)) by cong (λ t → x + t) (*-distribʳ-+ x y z) equals
+     (x + (y * x + z * x)) by sym (+-assoc x (y * x) (z * x)) equals
+     ((x + y * x) + z * x) ≡⟨⟩
+     (suc y * x + z * x)
+     ∎
+    where open ≡-Reasoning
+
+  *-distribˡ-+ : (x y z : ℕ) → x * (y + z) ≡ x * y + x * z 
+  *-distribˡ-+ x y z = 
+    begin
+     (x * (y + z)) by *-comm x _ equals 
+     ((y + z) * x) by *-distribʳ-+ x y z equals
+     (y * x + z * x) by cong (λ t → t + z * x) (sym (*-comm x y)) equals 
+     (x * y + z * x) by cong (λ t → x * y + t) (sym (*-comm x z)) equals
+     (x * y + x * z)
+     ∎
+    where open ≡-Reasoning 
+
+  *-assoc : (x y z : ℕ) → (x * y) * z ≡ x * (y * z) 
+  *-assoc zero y z = refl
+  *-assoc (suc x) y z = 
+    begin
+     suc x * y * z ≡⟨⟩
+     (y + x * y) * z by *-distribʳ-+ z y (x * y) equals
+     y * z + (x * y) * z by cong (λ t → y * z + t) (*-assoc x y z) equals
+     y * z + x * (y * z) ≡⟨⟩
+     suc x * (y * z)
+     ∎
+    where open ≡-Reasoning
+
+open import Relation.Binary.PropositionalEquality
+  using (_≡_; module ≡-Reasoning) 
+  public 
+
+module PropEq where 
+  open Relation.Binary.PropositionalEquality 
+    using (refl; cong; sym; trans)
+    public 
+
+open import Data.Bool 
+  using (if_then_else_) 
+  public 
+
+open import Function 
+  using (case_of_) 
+  public 
+
+open import Data.Bool.Properties 
+  using (∨-identityˡ; ∨-identityʳ;
+         ∨-zeroˡ; ∨-zeroʳ;
+         ∨-assoc; ∧-assoc;
+         ∧-identityˡ; ∧-identityʳ;
+         ∧-zeroˡ; ∧-zeroʳ;
+         not-involutive 
+        )
+  public 
+
+open import Data.Nat.Properties 
+  using (+-identityˡ; +-identityʳ;
+         *-identityˡ; *-identityʳ;
+         *-zeroˡ; *-zeroʳ;
+         +-assoc; *-assoc;
+         +-comm; *-comm;
+         ^-identityʳ;
+         +-suc; suc-injective;
+         *-distribˡ-+; *-distribʳ-+
+        )
+  public 
