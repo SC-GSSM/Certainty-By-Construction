@@ -189,7 +189,11 @@ module Sandbox-Preorders where
   IsPreorder.refl Related-preorder = related 
   IsPreorder.trans Related-preorder _ _ = related
 
-  
+  module Preorder-Reasoning {_~_ : Rel A ℓ} (~-preorder : IsPreorder _~_) where 
+    open IsPreorder ~-preorder public 
+    
+    --left off on page 189 Section 4.13
+
 
 
 
