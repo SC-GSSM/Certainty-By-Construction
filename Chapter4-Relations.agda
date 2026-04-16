@@ -191,12 +191,102 @@ module Sandbox-Preorders where
 
   module Preorder-Reasoning {_~_ : Rel A ℓ} (~-preorder : IsPreorder _~_) where 
     open IsPreorder ~-preorder public 
+
+    begin_ : {x y : A} → x ~ y → x ~ y 
+    begin_ x~y = x~y 
+    infix 1 begin_ 
+
+    _■ : (x : A) → x ~ x 
+    _■ x = refl 
+    infix 3 _■ 
+
+    _≡⟨⟩_ : (x : A) → {y : A} → x ~ y → x ~ y 
+    x ≡⟨⟩ p = p 
+    infixr 2 _≡⟨⟩_
     
-    --left off on page 189 Section 4.13
+    _≈⟨_⟩_ : (x : A) → ∀ {y z} → x ~ y → y ~ z → x ~ z 
+    _ ≈⟨ x~y ⟩ y~z = trans x~y y~z 
+    infixr 2 _≈⟨_⟩_ 
 
+    _≡⟨_⟩_ : (x : A) → ∀ {y z} → x ≡ y → y ~ z → x ~ z 
+    _ ≡⟨ PropEq.refl ⟩ y~z = y~z 
+    infixr 2 _≡⟨_⟩_ 
 
+  n≤1+n : (n : ℕ) → n ≤ 1 + n 
+  n≤1+n zero = z≤n
+  n≤1+n (suc n) = s≤s (n≤1+n n)
 
+  open Chapter3-Proofs using (+-comm) 
 
+  module ≤-Reasoning where 
+    open Preorder-Reasoning ≤-preorder 
+      renaming (_≈⟨_⟩_ to _≤⟨_⟩_) 
+      public 
+
+  n≤n+1 : (n : ℕ) → n ≤ n + 1 
+  n≤n+1 n = begin 
+    n ≤⟨ n≤1+n n ⟩ 
+    1 + n ≡⟨ +-comm 1 n ⟩ 
+    n + 1 ■ 
+    where open ≤-Reasoning
+
+  module Reachability {V : Set ℓ₁} (_⇒_ : Rel V ℓ₂) where 
+
+    private variable 
+      v v₁ v₂ v₃ : V 
+
+    data Path : Rel V (ℓ₁ ⊔ ℓ₂) where 
+      ↪_      : v₁ ⇒ v₂ → Path v₁ v₂ 
+      here    : Path v v 
+      connect : Path v₁ v₂ → Path v₂ v₃ → Path v₁ v₃ 
+
+    Path-preorder : IsPreorder Path 
+    IsPreorder.refl Path-preorder = here
+    IsPreorder.trans Path-preorder = connect   
+
+  module Example-AboutABoy where 
+    data Person : Set where 
+      ellie fiona marcus rachel susie will : Person 
+  
+    private variable 
+      p₁ p₂ : Person 
+    
+    data _IsFriendsWith_ : Rel Person lzero where 
+      marcus-will : marcus IsFriendsWith will 
+      marcus-fiona : marcus IsFriendsWith fiona 
+      fiona-susie : fiona IsFriendsWith susie 
+      sym : p₁ IsFriendsWith p₂ → p₂ IsFriendsWith p₁ 
+
+    data _IsInterestedIn_ : Rel Person lzero where 
+      marcus-ellie : marcus IsInterestedIn ellie 
+      will-rachel : will IsInterestedIn rachel 
+      rachel-will : rachel IsInterestedIn will 
+      susie-will : susie IsInterestedIn will 
+
+    data SocialTie : Rel Person lzero where
+      friendship : p₁ IsFriendsWith p₂ → SocialTie p₁ p₂ 
+      interest : p₁ IsInterestedIn p₂ → SocialTie p₁ p₂ 
+
+    open Reachability SocialTie 
+
+    will-fiona : Path will fiona 
+    will-fiona = begin 
+      will ≈⟨ ↪ friendship (sym marcus-will) ⟩ 
+      marcus ≈⟨ ↪ friendship marcus-fiona ⟩ 
+      fiona 
+      ■ 
+      where open Preorder-Reasoning Path-preorder 
+
+    rachel-ellie : Path rachel ellie 
+    rachel-ellie = begin
+      rachel ≈⟨ ↪ interest rachel-will ⟩
+      will ≈⟨ ↪ friendship (sym marcus-will) ⟩
+      marcus ≈⟨ ↪ interest marcus-ellie ⟩
+      ellie
+      ■
+      where open Preorder-Reasoning Path-preorder
+
+      --stopped at page 184 section 4.17
 
 
 
