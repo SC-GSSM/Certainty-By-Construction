@@ -286,7 +286,72 @@ module Sandbox-Preorders where
       ■
       where open Preorder-Reasoning Path-preorder
 
-      --stopped at page 184 section 4.17
+  ≤-antisym : {m n : ℕ} → m ≤ n → n ≤ m → m ≡ n 
+  ≤-antisym z≤n z≤n = PropEq.refl
+  ≤-antisym (s≤s h1) (s≤s h2) = PropEq.cong suc (≤-antisym h1 h2)
+
+  Antisymmetric : Rel A ℓ₁ → Rel A ℓ₂ → Set _ 
+  Antisymmetric _≈_ _≤_ = ∀ {x y} → x ≤ y → y ≤ x → x ≈ y 
+
+  _ : Antisymmetric _≡_ _≤_ 
+  _ = ≤-antisym
+
+  module _ {a ℓ : Level} {A : Set a} (_~_ : Rel A ℓ) where 
+    
+    record IsEquivalence : Set (a ⊔ ℓ) where 
+      field 
+        isPreorder : IsPreorder _~_ 
+        sym        : Symmetric _~_ 
+  
+      open IsPreorder isPreorder public 
+
+    record IsPartialOrder : Set (a ⊔ ℓ) where 
+      field 
+        isPreorder : IsPreorder _~_ 
+        antisym    : Antisymmetric _≡_ _~_ 
+    
+  ≡-equiv : IsEquivalence (_≡_ {A = A}) 
+  ≡-equiv .IsEquivalence.isPreorder = ≡-preorder
+  ≡-equiv .IsEquivalence.sym = PropEq.sym
+
+  ≤-poset : IsPartialOrder _≤_ 
+  ≤-poset .IsPartialOrder.isPreorder = ≤-preorder
+  ≤-poset .IsPartialOrder.antisym = ≤-antisym 
+
+  _<_ : Rel ℕ lzero 
+  m < n = m ≤ suc n 
+  infix 4 _<_ 
+
+open import Agda.Primitive 
+  using (Level; _⊔_; lzero; lsuc) 
+  public 
+
+open import Data.Product
+  using (Σ; _,_) 
+  public 
+
+open import Relation.Binary 
+  using (Rel; REL; Transitive; Reflexive; Symmetric; Antisymmetric)
+  public 
+
+open import Relation.Binary.PropositionalEquality 
+  using (subst) 
+  public 
+
+open import Data.Nat 
+  using (_≤_; z≤n; s≤s; _<_) 
+  public 
+
+open import Data.Nat.Properties 
+  using (≤-refl; ≤-trans; ≤-antisym; n≤1+n; module ≤-Reasoning)
+  public 
+
+open Sandbox-Preorders 
+  using (IsPreorder; IsEquivalence; IsPartialOrder; 
+         module Preorder-Reasoning;
+         ≡-preorder; ≡-equiv; 
+         ≤-preorder; ≤-poset) 
+  public 
 
 
 
