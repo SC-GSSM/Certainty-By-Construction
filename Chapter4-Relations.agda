@@ -196,9 +196,9 @@ module Sandbox-Preorders where
     begin_ x~y = x~y 
     infix 1 begin_ 
 
-    _■ : (x : A) → x ~ x 
-    _■ x = refl 
-    infix 3 _■ 
+    _∎ : (x : A) → x ~ x 
+    _∎ x = refl 
+    infix 3 _∎ 
 
     _≡⟨⟩_ : (x : A) → {y : A} → x ~ y → x ~ y 
     x ≡⟨⟩ p = p 
@@ -227,7 +227,7 @@ module Sandbox-Preorders where
   n≤n+1 n = begin 
     n ≤⟨ n≤1+n n ⟩ 
     1 + n ≡⟨ +-comm 1 n ⟩ 
-    n + 1 ■ 
+    n + 1 ∎ 
     where open ≤-Reasoning
 
   module Reachability {V : Set ℓ₁} (_⇒_ : Rel V ℓ₂) where 
@@ -274,7 +274,7 @@ module Sandbox-Preorders where
       will ≈⟨ ↪ friendship (sym marcus-will) ⟩ 
       marcus ≈⟨ ↪ friendship marcus-fiona ⟩ 
       fiona 
-      ■ 
+      ∎ 
       where open Preorder-Reasoning Path-preorder 
 
     rachel-ellie : Path rachel ellie 
@@ -283,7 +283,7 @@ module Sandbox-Preorders where
       will ≈⟨ ↪ friendship (sym marcus-will) ⟩
       marcus ≈⟨ ↪ interest marcus-ellie ⟩
       ellie
-      ■
+      ∎
       where open Preorder-Reasoning Path-preorder
 
   ≤-antisym : {m n : ℕ} → m ≤ n → n ≤ m → m ≡ n 

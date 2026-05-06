@@ -134,11 +134,8 @@ module Playground where
   --five : ℕ 
   --five = ∣ ∣ ∣ ∣ ∣ zero 
 
-  ■ : ℕ 
-  ■ = zero 
-
   five : ℕ 
-  five = ∣ ∣ ∣ ∣ ∣ ■ 
+  five = ∣ ∣ ∣ ∣ ∣ zero 
 
   postulate 
     ℝ : Set 

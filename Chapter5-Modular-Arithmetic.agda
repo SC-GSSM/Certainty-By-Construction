@@ -135,10 +135,48 @@ module ℕ/nℕ (n : ℕ) where
 
   +-zero-mod : (a b : ℕ) → a ≈ 0 → a + b ≈ b 
   +-zero-mod a zero a≈0 = begin
-    ? ≡⟨ ? ⟩
-    ?
-    ∎
+    a + zero ≡⟨ +-identityʳ a ⟩
+    a ≈⟨ a≈0 ⟩ 
+    zero
+    ∎ 
     where open Mod-Reasoning 
-  +-zero-mod a (suc b) a≈0 = {!   !}
+  +-zero-mod a (suc b) a≈0 = begin
+   a + suc b ≡⟨ +-suc a b ⟩
+   suc a + b ≡⟨⟩
+   suc (a + b) ≈⟨ suc-cong-mod (+-zero-mod a b a≈0) ⟩
+   suc b
+   ∎
+   where open Mod-Reasoning
+
+  suc-injective-mod : {a b : ℕ} → suc a ≈ suc b → a ≈ b 
+  suc-injective-mod (≈-mod a b is-mod) = ≈-mod a b (suc-injective is-mod)
+
+  +-cong₂-mod : {a b c d : ℕ} → a ≈ b → c ≈ d → a + c ≈ b + d 
+  +-cong₂-mod {zero} {b} {c} {d} pab pcd = begin
+   zero + c ≡⟨⟩
+   c ≈⟨ pcd ⟩
+   d ≈⟨ sym (+-zero-mod b d (sym pab)) ⟩
+   b + d
+   ∎
+   where open Mod-Reasoning
+  +-cong₂-mod {suc a} {zero} {c} {d} pab pcd = begin
+   (suc a) + c ≈⟨ +-zero-mod (suc a) c pab ⟩
+   zero + c ≈⟨ pcd ⟩
+   zero + d ≡⟨⟩
+   d
+   ∎
+   where open Mod-Reasoning
+  +-cong₂-mod {suc a} {suc b} {c} {d} pab pcd = suc-cong-mod (+-cong₂-mod (suc-injective-mod pab) pcd)
+
+  *-zero-mod : (a b : ℕ) → b ≈ 0 → a * b ≈ 0 
+  *-zero-mod zero b hyp = refl 
+  *-zero-mod (suc a) b hyp = begin
+   suc a * b ≡⟨⟩
+   b + a * b ≈⟨ +-cong₂-mod hyp (*-zero-mod a b hyp) ⟩
+   zero 
+   ∎
+   where open Mod-Reasoning
+
+  -- left off on page 215 
 
 
