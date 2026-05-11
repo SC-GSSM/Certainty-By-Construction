@@ -177,6 +177,30 @@ module ℕ/nℕ (n : ℕ) where
    ∎
    where open Mod-Reasoning
 
-  -- left off on page 215 
+  *-cong₂-mod : {a b c d : ℕ} → a ≈ b → c ≈ d → a * c ≈ b * d 
+  *-cong₂-mod {zero} {b} {c} {d} a≈b c≈d = begin
+   zero * c ≡⟨⟩
+   zero ≈⟨ sym (*-zero-mod d b (sym a≈b)) ⟩
+   d * b ≡⟨ *-comm d b ⟩
+   b * d
+   ∎
+   where open Mod-Reasoning
+  *-cong₂-mod {suc a} {zero} {c} {d} a≈b c≈d = begin
+   suc a * c ≡⟨ *-comm (suc a) c ⟩
+   c * suc a ≈⟨ *-zero-mod c (suc a) a≈b ⟩
+   zero ≡⟨⟩
+   zero * d
+   ∎
+   where open Mod-Reasoning
+  *-cong₂-mod {suc a} {suc b} {c} {d} a≈b c≈d = begin
+   (suc a) * c ≡⟨⟩
+   c + (a * c) ≈⟨ +-cong₂-mod c≈d (*-cong₂-mod (suc-injective-mod a≈b) c≈d) ⟩
+   d + (b * d) ≡⟨⟩
+   (suc b) * d
+   ∎
+   where open Mod-Reasoning
+
+-- finished but some red highlighting?
+  
 
 
