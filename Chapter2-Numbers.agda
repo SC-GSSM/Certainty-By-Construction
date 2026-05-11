@@ -86,7 +86,7 @@ module Sandbox-Naturals where
 
   _+_ : ℕ → ℕ → ℕ 
   zero + y = y
-  suc x + y = suc (x + y) 
+  suc x + y = suc (x + y)
 
   infixl 6 _+_ 
 
