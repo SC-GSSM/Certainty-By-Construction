@@ -114,9 +114,137 @@ module Nat-Properties where
   _≟ℕ_ : DecidableEquality ℕ 
   _≟ℕ_ = _≟_ 
 
-  -- stopping at page 233, Section 6.8
+  map-dec : {ℓ₁ ℓ₂ : Level} {P : Set ℓ₁} {Q : Set ℓ₂} → 
+            (P → Q) → (Q → P) → 
+            Dec P → Dec Q 
+  map-dec to from (yes p) = yes (to p)
+  map-dec to from (no ¬p) = no (λ q → ¬p (from q))
 
+open import Relation.Binary using (DecidableEquality) 
 
-
-
+module BinaryTrees where 
   
+  data BinTree {ℓ : Level} (A : Set ℓ) : Set ℓ where 
+    empty  : BinTree A 
+    branch : BinTree A → A → BinTree A → BinTree A 
+
+  {-
+  tree : BinTree ℕ 
+  tree = 
+    branch 
+      (branch (branch empty 0 empty) 0 (branch empty 2 empty)) 
+      4
+      (branch empty 6 empty) 
+  -}
+
+  pattern leaf a = branch empty a empty 
+
+  is-singleton : {A : Set} → BinTree A → Bool 
+  is-singleton (leaf _) = true 
+  is-singleton _       = false 
+
+  five-tree : BinTree ℕ 
+  five-tree = leaf 5
+
+  tree : BinTree ℕ 
+  tree = branch (branch (leaf 0) 0 (leaf 2)) 4 (leaf 6)
+
+  {- 
+  data _∈_ {ℓ : Level} {A : Set ℓ} : A → BinTree A → Set ℓ where 
+    here  : {a : A} {l r : BinTree A} → a ∈ branch l a r 
+    left  : {a b : A} {l r : BinTree A} → a ∈ l → a ∈ branch l b r 
+    right : {a b : A} {l r : BinTree A} → a ∈ r → a ∈ branch l b r 
+  -}
+
+  private variable 
+    ℓ : Level 
+    A : Set ℓ 
+    a b : A 
+    l r : BinTree A 
+
+  -- the test does not have the implicit argument, but there must have been a version change
+  -- the file does not typecheck unless we add back the implicit argument for A or 
+  -- we add the large indices flag
+  data _∈_ {A : Set ℓ} : A → BinTree A → Set ℓ where 
+    here  : a ∈ branch l a r 
+    left  : a ∈ l → a ∈ branch l b r 
+    right : a ∈ r → a ∈ branch l b r 
+
+  6∈tree : 6 ∈ tree 
+  6∈tree = right here
+
+  Decidable : {c ℓ : Level} {A : Set c} 
+              → (A → Set ℓ) → Set (c ⊔ ℓ) 
+  Decidable {A = A} P = (a : A) → Dec (P a)
+
+  Decidable₂ : {c ℓ : Level} {A : Set c} 
+               → (A → A → Set ℓ) → Set (c ⊔ ℓ) 
+  Decidable₂ {A = A} _~_ = (x y : A) → Dec (x ~ y) 
+
+  ∈? : DecidableEquality A → (t : BinTree A) → Decidable (_∈ t) 
+  ∈? _≟_ empty a = no λ ()
+  ∈? _≟_ (branch l x r) a 
+    with x ≟ a   | ∈? _≟_ l a 
+  ... | yes refl | _    = yes here 
+  ... | no _     | yes x∈l = yes (left x∈l)
+  ... | no x≢a   | no  x∉l with ∈? _≟_ r a
+  ... | yes x∈r = yes (right x∈r)
+  ... | no  x∉r =
+    no λ { here      → x≢a refl
+         ; (left p)  → x∉l p
+         ; (right p) → x∉r p
+         }
+
+  open Nat-Properties using (_≟ℕ_) 
+
+  _ : ∈? _≟ℕ_ tree 2 ≡ yes _ 
+  _ = refl 
+
+  _ : ∈? _≟ℕ_ tree 7 ≡ no _ 
+  _ = refl 
+
+  data All {ℓ₁ ℓ₂ : Level} {A : Set ℓ₁} (P : A → Set ℓ₂) : BinTree A → Set (ℓ₁ ⊔ ℓ₂) where 
+    empty  : All P empty 
+    branch : All P l → P a → All P r → All P (branch l a r)
+
+  pattern leaf a = branch empty a empty 
+
+  open Chapter2-Numbers using (IsEven; z-even; ss-even) 
+
+  tree-all-even : All IsEven tree 
+  tree-all-even = branch
+    (branch (leaf z-even) z-even
+     (leaf (ss-even z-even)))
+    (ss-even (ss-even z-even))
+    (leaf (ss-even (ss-even (ss-even z-even))))
+
+  all? : {P : A → Set} → Decidable P → Decidable (All P) 
+  all? p? empty = yes empty
+  all? p? (branch l a r) with p? a | all? p? l | all? p? r 
+  ... | no ¬pa | _      | _      = no λ { (branch _ pa _) → ¬pa pa } 
+  ... | yes _  | no ¬al | _      = no λ { (branch al _ _) → ¬al al }
+  ... | yes _  | yes _  | no ¬ar = no λ { (branch _ _ ar) → ¬ar ar }
+  ... | yes pa | yes al | yes ar = yes (branch al pa ar)
+
+  data IsBST {ℓ₁ ℓ₂ : Level} {A : Set ℓ₁} (_<_ : A → A → Set ℓ₂) : BinTree A → Set (ℓ₁ ⊔ ℓ₂) where 
+    bst-empty : IsBST _<_ empty 
+    bst-branch : All (_< a) l → All (a <_) r → IsBST _<_ l → IsBST _<_ r → IsBST _<_ (branch l a r) 
+
+  open Chapter4-Relations using (_≤_; z≤n; s≤s; _<_) 
+
+  tree-is-bst : IsBST _≤_ tree 
+  tree-is-bst = bst-branch
+    (branch (branch empty z≤n empty) z≤n
+     (branch empty (s≤s (s≤s z≤n)) empty))
+    (branch empty (s≤s (s≤s (s≤s (s≤s z≤n)))) empty)
+    (bst-branch (branch empty z≤n empty) (branch empty z≤n empty)
+     (bst-branch empty empty bst-empty bst-empty)
+     (bst-branch empty empty bst-empty bst-empty))
+    (bst-branch empty empty bst-empty bst-empty)
+
+  is-bst? : {_≤_ : A → A → Set} → Decidable₂ _≤_ → Decidable (IsBST _≤_) 
+  is-bst? _≤?_ empty = yes bst-empty
+  is-bst? _≤?_ (branch l a r) = {!   !}
+
+  -- stopped page 244 at the end of Section 6.13 
+
