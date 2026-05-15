@@ -162,7 +162,7 @@ module BinaryTrees where
     a b : A 
     l r : BinTree A 
 
-  -- the test does not have the implicit argument, but there must have been a version change
+  -- the text does not have the implicit argument for A below, but there must have been a version change
   -- the file does not typecheck unless we add back the implicit argument for A or 
   -- we add the large indices flag
   data _∈_ {A : Set ℓ} : A → BinTree A → Set ℓ where 
@@ -244,7 +244,99 @@ module BinaryTrees where
 
   is-bst? : {_≤_ : A → A → Set} → Decidable₂ _≤_ → Decidable (IsBST _≤_) 
   is-bst? _≤?_ empty = yes bst-empty
-  is-bst? _≤?_ (branch l a r) = {!   !}
+  is-bst? _≤?_ (branch l a r) 
+    with all? (_≤? a) l 
+  ... | no l≰ = no λ { (bst-branch l≤ _ _ _) → l≰ l≤ }
+  ... | yes l≤ 
+    with all? (a ≤?_) r 
+  ... | no ≰r = no λ { (bst-branch _ ≤r _ _) → ≰r ≤r }
+  ... | yes ≤r 
+    with is-bst? _≤?_ l 
+  ... | no ¬bst-l = no λ { (bst-branch _ _ bst-l _) → ¬bst-l bst-l }
+  ... | yes bst-l 
+    with is-bst? _≤?_ r 
+  ... | no ¬bst-r = no λ { (bst-branch _ _ _ bst-r) → ¬bst-r bst-r } 
+  ... | yes bst-r = yes (bst-branch l≤ ≤r bst-l bst-r)
 
-  -- stopped page 244 at the end of Section 6.13 
+  data Tri {a b c : Level} (A : Set a) (B : Set b) (C : Set c) : Set (a ⊔ b ⊔ c) where 
+    tri< :   A → ¬ B → ¬ C → Tri A B C 
+    tri≈ : ¬ A →   B → ¬ C → Tri A B C 
+    tri> : ¬ A → ¬ B →   C → Tri A B C 
+
+  Trichotomous : {ℓ eq lt : Level} → {A : Set ℓ} → (_≈_ : A → A → Set eq) → (_<_ : A → A → Set lt) → Set (lt ⊔ eq ⊔ ℓ) 
+  Trichotomous {A = A} _≈_ _<_ = (x y : A) → Tri (x < y) (x ≈ y) (y < x) 
+
+  refute : {x y : ℕ} → ¬ x < y → ¬ suc x < suc y 
+  refute x≮y (s≤s x<y) = x≮y x<y 
+
+  <-cmp : Trichotomous _≡_ _<_ 
+  <-cmp zero zero = tri≈ (λ ()) refl (λ ())
+  <-cmp zero (suc y) = tri< (s≤s z≤n) (λ ()) (λ ())
+  <-cmp (suc x) zero = tri> (λ ()) (λ ()) (s≤s z≤n)
+  <-cmp (suc x) (suc y) with <-cmp x y 
+  ... | tri< x<y x≉y x≱y = tri< (s≤s x<y) (λ { sx≈sy → x≉y (suc-injective sx≈sy) }) (refute x≱y)
+  ... | tri≈ x≮y x≈y x≱y = tri≈ (refute x≮y) (cong suc x≈y) (refute x≱y)
+  ... | tri> x≮y x≉y x>y = tri> (refute x≮y) (λ { sx≈sy → x≉y (suc-injective sx≈sy) }) (s≤s x>y)
+
+  module _ {ℓ : Level} {_<_ : A → A → Set ℓ} (<-cmp : Trichotomous _≡_ _<_) where 
+    
+    insert : A → BinTree A → BinTree A 
+    insert a empty = leaf a
+    insert a (branch l x r) with <-cmp a x 
+    ... | tri< _ _ _ = branch (insert a l) x r
+    ... | tri≈ _ _ _ = branch l x r
+    ... | tri> _ _ _ = branch l x (insert a r)
+
+    all-insert : {P : A → Set ℓ} → (a : A) → P a → {t : BinTree A} → All P t  → All P (insert a t) 
+    all-insert a pa {t} empty = leaf pa
+    all-insert a pa {branch l x r} (branch l<x px x<r) 
+      with <-cmp a x 
+    ... | tri< a<x _ _ = branch (all-insert a pa l<x) px x<r
+    ... | tri≈ _ a=x _ = branch l<x px x<r
+    ... | tri> _ _ x<a = branch l<x px (all-insert a pa x<r)
+
+    bst-insert : (a : A) → {t : BinTree A} → IsBST _<_ t → IsBST _<_ (insert a t) 
+    bst-insert a {t} bst-empty = bst-branch empty empty bst-empty bst-empty
+    bst-insert a {branch l x r} (bst-branch l<x x<r lbst rbst)
+      with <-cmp a x 
+    ... | tri< a<x _ _ = bst-branch (all-insert a a<x l<x) x<r (bst-insert a lbst) rbst
+    ... | tri≈ _ a=x _ = bst-branch l<x x<r lbst rbst
+    ... | tri> _ _ x<a = bst-branch l<x (all-insert a x<a x<r) lbst (bst-insert a rbst)
+
+module Intrinsic-BST-Impl {c ℓ : Level} {A : Set c} (_<_ : A → A → Set ℓ) where 
+
+  data BST (lo hi : A) : Set (c ⊔ ℓ) where 
+    empty : lo < hi → BST lo hi 
+    xbranch : (a : A) → BST lo a → BST a hi → BST lo hi 
+  
+  pattern branch lo a hi = xbranch a lo hi 
+  pattern leaf lo<a a a<hi = branch (empty lo<a) a (empty a<hi)
+
+  open BinaryTrees using (Trichotomous; Tri) 
+  open Tri 
+
+  insert : {lo hi : A} → (<-cmp : Trichotomous _≡_ _<_) → (a : A) → lo < a → a < hi → BST lo hi → BST lo hi 
+  insert <-cmp a lo<a a<hi (empty _) = leaf lo<a a a<hi
+  insert <-cmp a lo<a a<hi (branch l x r) 
+    with <-cmp a x 
+  ... | tri< a<x _ _ = branch (insert <-cmp a lo<a a<x l) x r
+  ... | tri≈ _ a=x _ = branch l x r
+  ... | tri> _ _ x<a = branch l x (insert <-cmp a x<a a<hi r)
+
+open BinaryTrees using (Trichotomous) 
+
+module Intrinsic-BST {c ℓ : Level} {A : Set c} {_<_ : A → A → Set ℓ} (<-cmp : Trichotomous _≡_ _<_) where 
+
+  data A↑ : Set c where 
+    -∞ +∞ : A↑ 
+    ↑     : A → A↑ 
+
+  data _<∞_ : A↑ → A↑ → Set (c ⊔ ℓ) where 
+    -∞<↑  : {x : A}           → -∞  <∞ ↑ x 
+    ↑<↑   : {x y : A} → x < y → ↑ x <∞ ↑ y 
+    ↑<+∞  : {x : A}           → ↑ x <∞ +∞ 
+    -∞<+∞ :                      -∞ <∞ +∞ 
+
+-- stopping at page 255 near the end of section 6.17
+
 
