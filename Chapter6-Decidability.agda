@@ -337,6 +337,37 @@ module Intrinsic-BST {c ℓ : Level} {A : Set c} {_<_ : A → A → Set ℓ} (<-
     ↑<+∞  : {x : A}           → ↑ x <∞ +∞ 
     -∞<+∞ :                      -∞ <∞ +∞ 
 
--- stopping at page 255 near the end of section 6.17
+  open BinaryTrees using (Tri)
+  open Tri 
 
+  <∞-cmp : Trichotomous _≡_ _<∞_ 
+  <∞-cmp -∞ -∞ = tri≈ (λ ()) refl (λ ())
+  <∞-cmp -∞ +∞ = tri< -∞<+∞ (λ ()) (λ ())
+  <∞-cmp -∞ (↑ x) = tri< -∞<↑ (λ ()) (λ ())
+  <∞-cmp +∞ -∞ = tri> (λ ()) (λ ()) -∞<+∞
+  <∞-cmp +∞ +∞ = tri≈ (λ ()) refl (λ ())
+  <∞-cmp +∞ (↑ x) = tri> (λ ()) (λ ()) ↑<+∞
+  <∞-cmp (↑ x) -∞ = tri> (λ ()) (λ ()) -∞<↑
+  <∞-cmp (↑ x) +∞ = tri< ↑<+∞ (λ ()) (λ ())
+  <∞-cmp (↑ x) (↑ y) with <-cmp x y 
+  ... | tri< x<y ¬x=y ¬y<x = tri< (↑<↑ x<y) (λ { refl → ¬x=y refl }) (λ { (↑<↑ y<x) → ¬y<x y<x })
+  ... | tri≈ ¬x<x refl _ = tri≈ (λ { (↑<↑ x<x) → ¬x<x x<x }) refl (λ { (↑<↑ x<x) → ¬x<x x<x })
+  ... | tri> ¬x<y ¬x=y y<x = tri> (λ { (↑<↑ x<y) → ¬x<y x<y }) (λ { refl → ¬x=y refl }) (↑<↑ y<x)
 
+  open module Impl = Intrinsic-BST-Impl _<∞_ hiding (BST; insert) 
+
+  BST : Set (c ⊔ ℓ) 
+  BST = Impl.BST -∞ +∞ 
+
+  insert : (a : A) → BST → BST 
+  insert a t = Impl.insert <∞-cmp (↑ a) -∞<↑ ↑<+∞ t 
+
+open import Data.Empty using (⊥; ⊥-elim) public 
+open import Relation.Nullary using (Dec; yes; no; ¬_) public 
+open import Relation.Unary using (Decidable) public 
+open import Relation.Binary.PropositionalEquality using (_≢_; ≢-sym) public
+open import Relation.Binary using (Reflexive; Transitive; DecidableEquality)
+  using (Trichotomous; Tri) renaming (Decidable to Decidable₂) public
+open import Relation.Nullary.Decidable renaming (map′ to map-dec) public
+open import Data.Nat.Properties using (<-cmp) public 
+open BinaryTrees using (BinTree; empty; branch; leaf) public 
