@@ -289,5 +289,25 @@ module Sandbox-Naive-Monoids where
   toList : ∀ {Container} → ⦃ Foldable Container ⦄ → Container A → List A 
   toList = fold ⦃ monoid = bundle ++-[] ⦄ (_∷ []) 
 
-  --stopping at Sectino 7.7 on page 275
+  module _ ⦃ m₁ : Monoid A ⦄ ⦃ m₂ : Monoid B ⦄ where 
+
+    _⊗_ : Op₂ (A × B) 
+    (a₁ , b₁) ⊗ (a₂ , b₂) = ((a₁ · a₂) , (b₁ · b₂))
+
+    ×-is-monoid : IsMonoid _⊗_ (ε , ε) 
+    ×-is-monoid .assoc (a₁ , b₁) (a₂ , b₂) (a₃ , b₃)
+      rewrite assoc is-monoid a₁ a₂ a₃ 
+      rewrite assoc is-monoid b₁ b₂ b₃ 
+        = refl
+    ×-is-monoid .identityˡ (a , b)
+      rewrite identityˡ is-monoid a 
+      rewrite identityˡ is-monoid b 
+        = refl 
+    ×-is-monoid .identityʳ (a , b)
+      rewrite identityʳ is-monoid a 
+      rewrite identityʳ is-monoid b 
+        = refl
+    
+ 
+
  
