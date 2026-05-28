@@ -307,7 +307,120 @@ module Sandbox-Naive-Monoids where
       rewrite identityʳ is-monoid a 
       rewrite identityʳ is-monoid b 
         = refl
+
+  ⊙ : ⦃ Monoid B ⦄ → Op₂ (A → B) 
+  ⊙ f g = λ x → f x · g x 
+
+  {- 
+  -- we cannot fill in the holes here because 
+  -- it requires equality of functions 
+  pointwise : ⦃ _ : Monoid B ⦄ → IsMonoid (⊙ {A = A}) (const ε) 
+  pointwise .assoc f g h = {!   !}
+  pointwise .identityˡ = {!   !}
+  pointwise .identityʳ = {!   !}
+  -} 
+
+module Sandbox-Extensionality where 
+  f₁ : ℕ → ℕ 
+  f₁ x = x + 2 
+
+  f₂ : ℕ → ℕ 
+  f₂ x = 2 + x 
+
+  _≗_ : {A : Set ℓ₁} {B : A → Set ℓ₂} → Rel ((x : A) → B x) _ 
+  _≗_ {A = A} f g = (x : A) → f x ≡ g x 
+
+  f₁≗f₂ : f₁ ≗ f₂ 
+  f₁≗f₂ zero = refl
+  f₁≗f₂ (suc x) = ≡.cong suc (+-comm x 2) 
+
+  module _ {A : Set ℓ₁} {B : A → Set ℓ₂} where 
+    private 
+      Fn : Set _ 
+      Fn = (x : A) → B x 
+
+    ≗-refl : Reflexive {A = Fn} _≗_ 
+    ≗-refl x = refl 
+
+    ≗-sym : Symmetric {A = Fn} _≗_ 
+    ≗-sym f≗g a = sym (f≗g a)
+
+    ≗-trans : Transitive {A = Fn} _≗_ 
+    ≗-trans f≗g g≗h a = trans (f≗g a) (g≗h a)
+
+    ≗-equiv : IsEquivalence {A = Fn} _≗_ 
+    ≗-equiv .IsEquivalence.isPreorder .IsPreorder.refl = ≗-refl
+    ≗-equiv .IsEquivalence.isPreorder .IsPreorder.trans = ≗-trans
+    ≗-equiv .IsEquivalence.sym = ≗-sym 
+
+    instance 
+      ≗-is-equiv = ≗-equiv  
+
+  postulate 
+    fun-ext : {A : Set ℓ₁} {B : A → Set ℓ₂} → {f g : (x : A) → B x} → f ≗ g → f ≡ g 
+
+  f₁≡f₃ : f₁ ≡ f₂ 
+  f₁≡f₃ = fun-ext f₁≗f₂ 
+
+record Setoid (c ℓ : Level) : Set (lsuc (c ⊔ ℓ)) where 
+  infix 4 _≈_ 
+  field 
+    Carrier       : Set c 
+    _≈_           : (x y : Carrier) → Set ℓ 
+    isEquivalence : IsEquivalence _≈_ 
+
+  open IsEquivalence isEquivalence public
+
+  module Reasoning where 
+    open Preorder-Reasoning (IsEquivalence.isPreorder isEquivalence) public 
+
+module Setoid-Renaming where 
+  open Setoid hiding (refl; trans; sym) 
+              renaming (isEquivalence to equiv) 
+              public 
+  open IsPreorder using () 
+                  renaming (refl to refl′; trans to trans′) 
+                  public 
+  open IsEquivalence using () 
+                     renaming (isPreorder to pre; sym to sym′) 
+                     public
+
+module _ where 
+  open Setoid-Renaming 
+
+  prop-setoid : Set ℓ → Setoid ℓ ℓ 
+  prop-setoid x .Carrier = x
+  prop-setoid x ._≈_ = _≡_
+  prop-setoid x .equiv .pre .refl′ = refl
+  prop-setoid x .equiv .pre .trans′ = trans
+  prop-setoid x .equiv .sym′ = sym 
+
+  instance 
+    prop-setoid-inst : {c : Level} {A : Set c} → Setoid c c 
+    prop-setoid-inst {A = A} = prop-setoid A 
+
+  private variable 
+    c c₁ c₂ : Level 
+
+  module _ (s₁ : Setoid c₁ ℓ₁) (s₂ : Setoid c₂ ℓ₂) where 
+    private instance 
+      s₁-equiv = equiv s₁ 
+      s₂-equiv = equiv s₂ 
     
- 
+    private 
+      Carrier₁ = s₁ .Carrier 
+      Carrier₂ = s₂ .Carrier 
+      _≈₁_ = s₁ ._≈_ 
+      _≈₂_ = s₂ ._≈_ 
+
+    ×-setoid : Setoid _ _ 
+    ×-setoid .Carrier = Carrier₁ × Carrier₂
+    ×-setoid ._≈_ (a₁ , b₁) (a₂ , b₂) = (a₁ ≈₁ a₂) × (b₁ ≈₂ b₂)
+    ×-setoid .equiv .pre .refl′ = refl , refl
+    ×-setoid .equiv .pre .trans′ (a₁₂ , b₁₂) (a₂₃ , b₂₃) = trans a₁₂ a₂₃ , trans b₁₂ b₂₃
+    ×-setoid .equiv .sym′ (a , b) = sym a , sym b 
+
+    -- stopping at U-pointswise on page 283
+
 
  
