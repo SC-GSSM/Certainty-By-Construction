@@ -374,6 +374,7 @@ record Setoid (c ℓ : Level) : Set (lsuc (c ⊔ ℓ)) where
   module Reasoning where 
     open Preorder-Reasoning (IsEquivalence.isPreorder isEquivalence) public 
 
+-- we are renaming these to avoid name collisions 
 module Setoid-Renaming where 
   open Setoid hiding (refl; trans; sym) 
               renaming (isEquivalence to equiv) 
@@ -387,7 +388,7 @@ module Setoid-Renaming where
 
 module _ where 
   open Setoid-Renaming 
-
+  -- propositional equality on a set lifted to a setoid
   prop-setoid : Set ℓ → Setoid ℓ ℓ 
   prop-setoid x .Carrier = x
   prop-setoid x ._≈_ = _≡_
@@ -420,7 +421,33 @@ module _ where
     ×-setoid .equiv .pre .trans′ (a₁₂ , b₁₂) (a₂₃ , b₂₃) = trans a₁₂ a₂₃ , trans b₁₂ b₂₃
     ×-setoid .equiv .sym′ (a , b) = sym a , sym b 
 
-    -- stopping at U-pointswise on page 283
+    data ⊎-Pointwise : Rel (Carrier₁ ⊎ Carrier₂) (c₁ ⊔ c₂ ⊔ ℓ₁ ⊔ ℓ₂) where 
+      inj₁ : {x y : Carrier₁} → x ≈₁ y → ⊎-Pointwise (inj₁ x) (inj₁ y)  
+      inj₂ : {x y : Carrier₂} → x ≈₂ y → ⊎-Pointwise (inj₂ x) (inj₂ y) 
 
+    ⊎-equiv : IsEquivalence ⊎-Pointwise 
+    ⊎-equiv .pre .refl′ {inj₁ x} = inj₁ refl
+    ⊎-equiv .pre .refl′ {inj₂ y} = inj₂ refl
+    ⊎-equiv .pre .trans′ {i} {j} {k} (inj₁ x=y) (inj₁ y=z) = inj₁ (trans x=y y=z)
+    ⊎-equiv .pre .trans′ {i} {j} {k} (inj₂ x=y) (inj₂ y=z) = inj₂ (trans x=y y=z)
+    ⊎-equiv .sym′ (inj₁ x) = inj₁ (sym x)
+    ⊎-equiv .sym′ (inj₂ y) = inj₂ (sym y)
 
- 
+    ⊎-setoid : Setoid (c₁ ⊔ c₂) (c₁ ⊔ c₂ ⊔ ℓ₁ ⊔ ℓ₂) 
+    ⊎-setoid .Carrier = s₁ .Carrier ⊎ s₂ .Carrier
+    ⊎-setoid ._≈_ = ⊎-Pointwise
+    ⊎-setoid .equiv = ⊎-equiv 
+
+  module _ {a b : Level} (s₁ : Setoid a ℓ₁) (s₂ : Setoid b ℓ₂) where 
+    open Setoid s₁ renaming (Carrier to From; _≈_ to _≈₁_) 
+    open Setoid s₂ renaming (Carrier to To; _≈_ to _≈₂_) 
+
+    record Fn : Set (a ⊔ b ⊔ ℓ₁ ⊔ ℓ₂) where 
+      constructor fn 
+      field 
+        func : From → To 
+        cong : {x y : From} → x ≈₁ y → func x ≈₂ func y 
+    
+    open Fn 
+
+-- stopped at page 285
