@@ -448,6 +448,53 @@ module _ where
         func : From → To 
         cong : {x y : From} → x ≈₁ y → func x ≈₂ func y 
     
-    open Fn 
+    open Fn
 
--- stopped at page 285
+    fun-ext : Setoid _ _
+    fun-ext .Carrier = Fn
+    fun-ext ._≈_ f g = {x y : From} → x ≈₁ y → f .func x ≈₂ g .func y
+    fun-ext .equiv .pre .refl′ {f} x=y = f .cong x=y
+    fun-ext .equiv .pre .trans′ ij jk x=y = trans′ (pre (equiv s₂)) (ij x=y) (jk (refl′ (pre (equiv s₁))))
+    fun-ext .equiv .sym′ ij x=y = sym′ (equiv s₂) (ij (sym′ (equiv s₁) x=y))
+
+    _⇒_ = fun-ext
+
+record Monoid (c ℓ : Level) : Set (lsuc (c ⊔ ℓ)) where
+  field
+    setoid : Setoid c ℓ
+
+  open Setoid setoid hiding (refl; sym; trans) public
+
+  infixl 7 _·_
+  field
+    _·_ : Op₂ Carrier
+    ϵ   : Carrier
+    assoc : (x y z : Carrier) → (x · y) · z ≈ x · (y · z)
+    identityˡ : (x : Carrier) → ϵ · x ≈ x
+    identityʳ : (x : Carrier) → x · ϵ ≈ x
+    ·-cong : {x y z w : Carrier} → x ≈ y → z ≈ w → x · z ≈ y · w
+
+module Naive = Sandbox-Naive-Monoids
+
+recover : {_·_ : Op₂ A} {ϵ : A} → Naive.IsMonoid _·_ ϵ → Monoid _ _
+recover {A = A} {_·_} {ϵ} x = record
+  { setoid   = prop-setoid A
+  ; _·_      = _·_
+  ; ϵ        = ϵ
+  ; assoc    = assoc
+  ; identityˡ = identityˡ
+  ; identityʳ = identityʳ
+  ; ·-cong   = λ { ≡.refl ≡.refl → refl }
+  }
+  where open Naive.IsMonoid x
+
+∧-true = recover Naive.∧-true
+∨-false = recover Naive.∨-false
++-0 = recover Naive.+-0
+*-1 = recover Naive.*-1
+
+++-[] <∣>-nothing : {A : Set ℓ} → Monoid _ _
+++-[] {A = A} = recover (Naive.++-[] {A = A})
+<∣>-nothing {A = A} = recover (Naive.<∣>-nothing {A = A})
+
+
